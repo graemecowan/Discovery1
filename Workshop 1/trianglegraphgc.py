@@ -112,7 +112,7 @@ class SoilTrianglePlot:
         global len
         self.grid((range(10, 100, 10), range(10, 100, 10), range(10, 100, 10)))
         lstyle = {'dashes': (4, 1, 2, 1),
-         'linewidth': 0.80000000000000004}
+         'linewidth': 1.5}
         if country=='USA':
             self.line((85, 0, 15), (90, 10, 0), **lstyle)
             self.line((70, 0, 30), (85, 15, 0), **lstyle)
