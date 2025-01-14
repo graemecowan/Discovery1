@@ -1,115 +1,86 @@
 # -*- mode: python -*-
 
-##Code source: https://github.com/mishagrol/TernaryPlotPy
+#This code is based on: https://github.com/mishagrol/TernaryPlotPy
 
 """A triangle-plot general class, meant to support the soil texture triangle. 
    Written by C. P. H. Lewis while at the University of California, Berkeley, 2008-2009. """
-#TODO: use the transforms technique in matplotlib; see http://matplotlib.sourceforge.net/examples/api/custom_projection_example.html?highlight=subclass
-import pylab as p
-import matplotlib.cm as cm
+
+import matplotlib.pyplot as plt
+import numpy as np
 from math import sqrt
 import pandas as pd
-# from matplotlib.mlab import csv2rec
-# from matplotlib.mlab import load
-from matplotlib.cbook import to_filehandle
 
 class SoilTrianglePlot:
-    """For plotting things like soil texture data, which we describe in three coordinates but really have two (silt+sand+clay == 100 percent).
-    
-    Formatting of colors, linestyles, etc. is mostly inherited from the matplotlib plot, which mostly uses MATLAB(tm) arguments. """
+    """For plotting soil texture data (e.g., sand, silt, clay) on a ternary plot."""
+
 
     def _toCart(self, threecoords):
-        'Given an array of triples of coords in 0-100, returns arrays of Cartesian x- and y- coords'
-        global type
-        global sqrt
-        assert (type(threecoords) == type([])), 'Expected a list of 3-coordinate tuple points'
+        """
+        Converts the soil texture triangle coordinates (sand, silt, clay) 
+        to Cartesian coordinates for plotting.
+        """
         cartxs = []
         cartys = []
         for triple in threecoords:
-            (b, l, r) = triple
-            #assert (b + l + r == 100), "3-coordinate values must sum to 100; %d, %d, %d don't" % (b, l, r)
-            #if values dont sum to 100, scale so that sum is 100
-            total=b+l+r
-            b2=b*(100/total)
-            l2=l*(100/total)
-            r2=r*(100/total)
+            b, l, r = triple  # b = sand, l = clay, r = silt (correct order)
+        #assert (b + l + r == 100), "3-coordinate values must sum to 100; %d, %d, %d don't" % (b, l, r)
+            total = b + l + r
+            b2 = b * (100 / total)
+            l2 = l * (100 / total)
+            r2 = r * (100 / total)
             cartxs.append(100 - b2 - l2 / 2.0)
             cartys.append(sqrt(3) * l2 / 2.0)
         return (cartxs, cartys)
 
-    def satisfies_bounds(self, point, limits):
-        """point is 3 coordinates; limits is 3 pairs. Returns True or False (for closed set)."""
-        # global True
-        # global False
-        for i in [0, 1, 2]:
-            if not (limits[i][0] <= point[i] <= limits[i][1]):
-                return False
-        return True
-
     def scatter(self, threecoords, **kwargs):
-        """Scatterplots data given in triples, with the matplotlib keyword arguments"""
-        global p
-        (xs, ys) = self._toCart(threecoords)
-        p.scatter(xs, ys, **kwargs)
+        """Scatter plot the soil texture data."""
+        xs, ys = self._toCart(threecoords)
+        plt.scatter(xs, ys, **kwargs)
 
     def plot(self, threecoords, descriptor, **kwargs):
-        'Plots data given in triples, with most of the matplotlib keyword arguments'
-        global p
-        (xs, ys) = self._toCart(threecoords)
-        p.plot(xs, ys, descriptor, **kwargs)
+        """Plot the soil texture data."""
+        xs, ys = self._toCart(threecoords)
+        plt.plot(xs, ys, descriptor, **kwargs)
 
     def colorbar(self, label):
-        'Draws the colorbar and labels it'
-        global p
-        cb = p.colorbar()
-        cb = cb.set_label(label)
+        """Draw a colorbar and label it."""
+        cb = plt.colorbar()
+        cb.set_label(label)
 
-    def line(self, begin, end, simplestyle = 'k-', **kwargs):
-        global p
-        (xs, ys) = self._toCart([begin, end])
-        p.plot(xs, ys, simplestyle, **kwargs)
+    def line(self, begin, end, simplestyle='k-', **kwargs):
+        """Draw a line between two points on the triangle."""
+        xs, ys = self._toCart([begin, end])
+        plt.plot(xs, ys, simplestyle, **kwargs)
 
     def outline(self):
+        """Draw the outline of the soil texture triangle."""
         self.line((0, 100, 0), (100, 0, 0), 'k-')
         self.line((0, 100, 0), (0, 0, 100), 'k-')
-        self.line((0, 0, 100), (100, 0, 0), 'k-', label='_nolegend_')
+        self.line((0, 0, 100), (100, 0, 0), 'k-')
 
-    def grid(self, triple = ([25, 50, 100], [25, 50, 100], [25, 50, 100]), labels = ()):
-        'Grid lines will be drawn for ([bottom],[left],[right]) values.'
-        global p
-        global str
-        global len
-        global sqrt
+    def grid(self, triple=([25, 50, 100], [25, 50, 100], [25, 50, 100]), labels=()):
+        """Draw grid lines for the soil texture triangle."""
         (bs, ls, rs) = triple
-        lstyle = {'dashes': (1, 1),
-         'linewidth': 0.5}
+        lstyle = {'dashes': (1, 1), 'linewidth': 0.5}
         for b in bs:
-            #assert 0 <= b <= 100, 'Bottom value not in 0-100 range'
             self.line((b, 0, 100 - b), (b, 100 - b, 0), **lstyle)
-            p.text(100 - b, -5, b, rotation=300, fontsize=9)
+            plt.text(100 - b, -5, b, rotation=300, fontsize=9)
         for l in ls:
-            #assert 0 <= l <= 100, 'Left value not in 0-100 range'
             self.line((0, l, 100 - l), (100 - l, l, 0), **lstyle)
-            p.text(l / 2.0 - 2 * len(str(l)), sqrt(3) * l / 2 - 1, l, fontsize=9)
+            plt.text(l / 2.0 - 2 * len(str(l)), sqrt(3) * l / 2 - 1, l, fontsize=9)
         for r in rs:
-            #assert 0 <= r <= 100, 'Right value not in 0-100 range'
             self.line((0, 100 - r, r), (100 - r, 0, r), **lstyle)
-            p.text(50 + r / 2.0, sqrt(3) * (50 - r / 2.0), r, rotation=60, fontsize=9)
-        if (len(labels) > 0):
-            p.text(50 - len(labels[0]) / 2, -12, labels[0], fontsize=8)
-            p.text(15 - len(labels[1]) / 2, sqrt(3) * (25 - len(labels[1]) / 2), labels[1], rotation=60, fontsize=8)
-            p.text(82 - len(labels[2]) / 2, 48 - len(labels[2]) / 2, labels[2], rotation=300, fontsize=8)
+            plt.text(50 + r / 2.0, sqrt(3) * (50 - r / 2.0), r, rotation=60, fontsize=9)
+        if len(labels) > 0:
+            plt.text(50 - len(labels[0]) / 2, -12, labels[0], fontsize=8)
+            plt.text(15 - len(labels[1]) / 2, sqrt(3) * (25 - len(labels[1]) / 2), labels[1], rotation=60, fontsize=8)
+            plt.text(82 - len(labels[2]) / 2, 48 - len(labels[2]) / 2, labels[2], rotation=300, fontsize=8)
 
     def soil_categories(self, sclabel = '_nolegend_', country = 'Britain'):
         """ Draws dashed lines between the soil-type categories. These are regional; options  are:
         'USA' (boundaries estimated from Brady & Weil, 12th ed, fig 4.7.)
         'Britain' (boundaries estimated from White, _Principles and Practices of Soil Science, 2006, fig. 2.3.a
         'Australia' (boundaries estimated from White, ibid., fig. 2.3.b)."""
-
-        global p
-        global range
-        global sqrt
-        global len
         self.grid((range(10, 100, 10), range(10, 100, 10), range(10, 100, 10)))
         lstyle = {'dashes': (4, 1, 2, 1),
          'linewidth': 1.5}
@@ -150,90 +121,68 @@ class SoilTrianglePlot:
             self.line((91.5,8.5,0),(63,12,25),**lstyle)
             self.line((76.25, 10.5, 13.25),(50,50,0),**lstyle)
         labels = ('Sand (%)', 'Clay (%)', 'Silt (%)')
-        p.text(40 - len(labels[0]) / 2, -10, labels[0])
-        p.text(13 - len(labels[1]) / 2, sqrt(3) * (25 - len(labels[1]) / 2), labels[1], rotation=60)
-        p.text(80 - len(labels[2]) / 2, 50 - len(labels[2]) / 2, labels[2], rotation=300)
-
-    def patch(self,limits, **kwargs): 
-        '''Fill the area bounded by limits.
-              Limits format: [[bmin,bmax],[lmin,lmax],[rmin,rmax]]
-              Other arguments as for pylab.fill()'''
+        plt.text(40 - len(labels[0]) / 2, -10, labels[0])
+        plt.text(13 - len(labels[1]) / 2, sqrt(3) * (25 - len(labels[1]) / 2), labels[1], rotation=60)
+        plt.text(80 - len(labels[2]) / 2, 50 - len(labels[2]) / 2, labels[2], rotation=300)
+    
+    def patch(self, limits, **kwargs):
+        """Fill the area bounded by limits."""
         coords = []
-        bounds = [[1,-1,1],[1,0,-1],[-1,0,0],[1,-1,0],[1,1,-1],[-1,1,0],[0,-1,0],
-                  [0,1,-1],[-1,1,1],[0,-1,1],[0,0,-1],[-1,0,1]]
-        for pt in bounds:     #plug in values for these limits
-            for i in [0,1,2]:
-                if pt[i] == 1: 
+        for pt in [[1, -1, 1], [1, 0, -1], [-1, 0, 0], [1, -1, 0]]:
+            for i in [0, 1, 2]:
+                if pt[i] == 1:
                     pt[i] = limits[i][1]
-                else:
-                    if pt[i] == 0:pt[i] = limits[i][0]
-            for i in [0,1,2]:
-                if pt[i] == -1: pt[i] = 99 - sum(pt) 
-            if self.satisfies_bounds(pt, limits): coords.append(pt) 
-        coords.append(coords[0]) #close the loop
+                elif pt[i] == 0:
+                    pt[i] = limits[i][0]
+            coords.append(pt)
+        coords.append(coords[0])  # Close the loop
         xs, ys = self._toCart(coords)
-        p.fill(xs, ys, **kwargs) 
+        plt.fill(xs, ys, **kwargs)
 
-    def scatter_from_csv(self, filename, sand = 'sand', silt = 'silt', clay = 'clay', diameter = '', hue = '', tags = '', **kwargs):
-        """Loads data from filename (expects csv format). Needs one header row with at least the columns {sand, silt, clay}. Can also plot two more variables for each point; specify the header value for columns to be plotted as diameter, hue. Can also add a text tag offset from each point; specify the header value for those tags.
-        Note! text values (header entries, tag values ) need to be quoted to be recognized as text. """
-        # fh = file(filename, 'rU')
-        fh = open(filename, 'rU')
-        # soilrec = csv2rec(fh)
-        soilrec = pd.read_csv(fh)
-        count = 0
-        if (sand in soilrec.dtypes):
-            count = count + 1
-        if (silt in soilrec.dtypes):
-            count = count + 1
-        if (clay in soilrec.dtypes):
-            count = count + 1
-        if (count < 3):
-            print("ERROR: need columns for sand, silt and clay identified in ', filename")
+    def scatter_from_csv(self, filename, sand='sand', silt='silt', clay='clay', diameter='', hue='', tags='', **kwargs):
+        """Load data from a CSV file and plot it."""
+        soilrec = pd.read_csv(filename)
+        if sand not in soilrec or silt not in soilrec or clay not in soilrec:
+            print("ERROR: Columns for sand, silt, and clay not found in CSV.")
+            return
         locargs = {'s': None, 'c': None}
-        for (col, key) in ((diameter, 's'), (hue, 'c')):
-            col = col.lower()
-            if (col != '') and (col in soilrec.dtypes):
+        for col, key in ((diameter, 's'), (hue, 'c')):
+            if col and col in soilrec:
                 locargs[key] = soilrec[col]
-            #else:
-                #print('ERROR: did not find ', col, 'in ', filename)
-        for k in kwargs:
-            locargs[k] = kwargs[k]
-        values = list(zip(*[soilrec[sand], soilrec[clay], soilrec[silt]]))
-        (xs, ys) = self._toCart(values)
-        p.scatter(xs, ys, label='_', **locargs)
-        if (tags != ''):
-            tags = tags.lower()
-            for (x, y, tag) in zip(*[xs, ys, soilrec[tags]]):
-                # print (x),
-                # print (y),
-                # print (tag)
-                p.text(x + 1, y + 1, tag, fontsize=17)
-        fh.close()
+        values = list(zip(soilrec[sand], soilrec[clay], soilrec[silt] ))
+        xs, ys = self._toCart(values)
+        plt.scatter(xs, ys, label='_', **locargs)
+        if tags:
+            for x, y, tag in zip(xs, ys, soilrec[tags]):
+                plt.text(x + 1, y + 1, tag, fontsize=8)
 
-    def __init__(self, stitle = ''):
-        global p
-        # global True
-        p.clf()
-        p.axis('off')
-        p.axis('equal')
-        # p.hold(True)
-        p.title(stitle)
+    def __init__(self, stitle=''):
+        """Initialize the plot with an optional title."""
+        plt.clf()
+        plt.axis('off')
+        plt.axis('equal')
+        plt.title(stitle)
         self.outline()
 
     def text(self, loctriple, word, **kwargs):
-        global p
-        (x, y) = self._toCart([loctriple])
-        p.text(x[0], y[0], word, **kwargs)
+        """Add text at a specific location on the plot."""
+        x, y = self._toCart([loctriple])
+        plt.text(x[0], y[0], word, **kwargs)
 
-    def show(self, filename = 'trianglegraph_test'):
-        global p
-        #p.legend(loc=1)
-        p.axis([-10, 110, -10, 110])
-        p.ylim(-10, 100)
-        p.savefig(filename)
-        p.show()
+    def show(self, filename='trianglegraph_test'):
+        """Save and show the plot."""
+        plt.axis([-10, 110, -10, 110])
+        plt.ylim(-10, 100)
+        plt.savefig(filename)
+        plt.show()
 
     def close(self):
-        global p
-        p.close()
+        """Close the plot."""
+        plt.close()
+
+# Example usage to create and show a ternary plot
+if __name__ == "__main__":
+    plotter = SoilTrianglePlot("Soil Texture Plot")
+    plotter.scatter([(40, 40, 20), (20, 60, 20), (30, 30, 40)]) #N.B. THIS TAKES VALUES IN THE ORDER SAND, CLAY, SILT
+    plotter.soil_categories('Britain')
+    plotter.show("soil_texture_plot_with_grid_and_categories.png")
